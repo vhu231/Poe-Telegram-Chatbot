@@ -25,8 +25,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Replace <api_key> with your actual API key, ensuring it is a string.
 api_key = os.environ["POE_API_KEY"]
 bot_names = {
-    'gpt4': 'GPT-4',
-    'claude3': 'Claude-3-Opus'
+    'gpt4': 'GPT-4o',
+    'claude3': 'Claude-3.5-Sonnet'
 }
 default_bot_name = bot_names['claude3']
 user_tasks = {}
@@ -78,6 +78,32 @@ async def handle_message(update: Update, context):
     user_id = update.effective_user.id
     logging.info(f"开始处理用户 {user_id} 的请求")
     user_input = update.message.text
+    message = fp.ProtocolMessage(role="user", content=user_input)
+
+    # Check if the message is in a private chat
+    if update.message.chat.type == 'private':
+        is_private = True
+    else:
+        is_private = False
+
+    # Check if the message is a reply to the bot or contains a mention of the bot in a group chat
+    if update.message.chat.type in ['group', 'supergroup']:
+        if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
+            is_reply = True
+        else:
+            is_reply = False
+
+        if context.bot.username in update.message.text:
+            is_mentioned = True
+        else:
+            is_mentioned = False
+    else:
+        is_reply = False
+        is_mentioned = False
+
+    if not (is_private or is_reply or is_mentioned):
+        return
+
     message = fp.ProtocolMessage(role="user", content=user_input)
 
     # 获取用户上下文
